@@ -19,6 +19,7 @@ Accept payment using Billplz by using this plugin.
 1. Go to WHMCS Administration
 2. Setup >> Payments >> Payment Gateways
 3. Set **API Key** & **X Signature Key**
+4. Set **Convert to Processing** to **MYR**
 4. Save
 
 # Troubleshooting
