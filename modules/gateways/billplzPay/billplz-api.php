@@ -1,14 +1,10 @@
 <?php
-
-use GuzzleHttp\Client;
-use GuzzleHttp\Exception\ClientException;
-
 if (!class_exists('Billplz')) {
 
     class Billplz
     {
 
-        public static $version = 3.04;
+        public static $version = 3.06;
         var $array, $obj, $url, $id, $deliverLevel, $errorMessage;
         private $api_key_status = false;
 
@@ -608,6 +604,13 @@ if (!class_exists('Billplz')) {
 
         public function curl_action($data = '')
         {
+
+            if ($this->action == 'GETCOLLECTIONINDEX' || $this->action == 'GETTRANSACTIONINDEX') {
+                $this->url .= '?page=' . $data['page'] . '&status=' . $data['status'];
+            } else if ($this->action == 'CHECKCOLLECTION') {
+                $this->url .= $data['id'];
+            }
+
 
             $process = curl_init();
             curl_setopt($process, CURLOPT_URL, $this->url);
