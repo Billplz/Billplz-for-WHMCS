@@ -1,10 +1,19 @@
 <?php
 /*
- * Last Update: August 2017
+ * Last Update: 16 January 2018
  */
+
+use Illuminate\Database\Capsule\Manager as Capsule;
 
 function billplzPay_config()
 {
+
+    /*
+    * Added to achieve 1 invoice, 1 bill as possible
+    */
+
+    billplzPay_create_table();
+
     $configarray = array(
         'FriendlyName' => array(
             'Type' => 'System',
@@ -67,11 +76,27 @@ function billplzPay_config()
     return $configarray;
 }
 
-//use Illuminate\Database\Capsule\Manager as Capsule;
+function billplzPay_create_table()
+{
+    // If the table is not exist, create one
+    if (!Capsule::schema()->hasTable('mod_billplz_gateway')) {
+        Capsule::schema()->create(
+                'mod_billplz_gateway',
+        function ($table) {
+            /** @var \Illuminate\Database\Schema\Blueprint $table */
+            $table->integer('invoiceid')->primary();
+            $table->integer('userid');
+            $table->string('billurl');
+            $table->string('amount');
+            $table->string('name');
+            $table->string('email');
+        }
+    );
+    }
+}
 
 function billplzPay_link($params)
 {
-
     // Gateway Configuration Parameters
     $api_key = $params['billplz_api_key'];
     $collection_id = $params['billplz_collection_id'];
@@ -85,6 +110,7 @@ function billplzPay_link($params)
     $currencyCode = $params['currency'];
 
     // Client Parameters
+    $userid =  $params['clientdetails']['userid'];
     $firstname = $params['clientdetails']['firstname'];
     $lastname = $params['clientdetails']['lastname'];
     $name = $firstname . ' ' . $lastname;
@@ -106,23 +132,24 @@ function billplzPay_link($params)
     $moduleName = $params['paymentmethod'];
     $whmcsVersion = $params['whmcsVersion'];
 
-    $raw_string = $amount .$invoiceId;
+    $raw_string = $amount .$invoiceId. $userid;
     $filtered_string = preg_replace("/[^a-zA-Z0-9]+/", "", $raw_string);
     $hash = hash_hmac('sha256', $filtered_string, $x_signature);
-    
+
     #query
     //$sql = Capsule::select("SELECT description FROM tblinvoiceitems WHERE invoiceid='$invoiceId'");
     //$bill_desc = $sql[0]->description;
     # Enter your code submit to the gateway..
-    
-    if (substr($systemUrl, -1) === '/'){
+
+    if (substr($systemUrl, -1) === '/') {
         $action_url = $systemUrl . 'modules/gateways/billplzPay/billplzBills.php';
-    }else {
+    } else {
         $action_url = $systemUrl . '/modules/gateways/billplzPay/billplzBills.php';
     }
-    
+
     $sendData = '<form name="paymentfrm" method="post" action="' . $action_url . '">
     <input type="hidden" name="email" value = "' . $email . '">
+    <input type="hidden" name="userid" value = "' . $userid . '">
     <input type="hidden" name="mobile" value = "' . $phone . '">
     <input type="hidden" name="name" value = "' . $name . '">
     <input type="hidden" name="amount" value = "' . $amount . '">

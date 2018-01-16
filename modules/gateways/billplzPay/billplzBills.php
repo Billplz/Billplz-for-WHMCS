@@ -6,7 +6,7 @@ require(__DIR__ . '/billplz-api.php');
 
 global $CONFIG;
 
-//use WHMCS\Database\Capsule;
+use Illuminate\Database\Capsule\Manager as Capsule;
 
 define('CLIENTAREA', true);
 //define('FORCESSL', true); // Uncomment to force the page to use https://
@@ -47,17 +47,47 @@ if ($ca->isLoggedIn() || $_SESSION['adminid']) {
     $amount = isset($_POST['amount']) ? $_POST['amount'] : die('Amount parameter is not passed');
     $description = isset($_POST['description']) ? $_POST['description'] : die('Description parameter is not passed');
     $reference_1 = isset($_POST['invoiceid']) ? $_POST['invoiceid'] : die('Invoice parameter is not passed');
+    $userid = isset($_POST['userid']) ? $_POST['userid'] : die('Userid parameter is not passed');
 
     $hash = isset($_POST['hash']) ? $_POST['hash'] : die('Hash parameter is not passed');
-    $raw_string = $amount . $reference_1;
+    $raw_string = $amount . $reference_1 . $userid;
     $filtered_string = preg_replace("/[^a-zA-Z0-9]+/", "", $raw_string);
     $new_hash = hash_hmac('sha256', $filtered_string, $x_signature);
 
-    if ($hash !== $new_hash)
+    if ($hash !== $new_hash) {
         exit('Calcualted Hash does not valid. Contact developer for more information.');
+    }
 
     $redirect_url = $CONFIG['SystemURL'] . '/modules/gateways/billplzPay/billplzReturn.php';
     $callback_url = $CONFIG['SystemURL'] . '/modules/gateways/callback/billplzCallback.php';
+
+
+    /*
+    * Added to achieve 1 invoice, 1 bill as possible
+    */
+    $sqlquery = Capsule::table('mod_billplz_gateway')
+                        ->where('userid', $userid)
+                        ->where('invoiceid', $reference_1)
+                        ->get();
+    foreach ($sqlquery as $data) {
+        $database_url = $data->billurl;
+        $database_amount = $data->amount;
+        $database_name = $data->name;
+        $database_email = $data->email;
+        unset($data);
+
+        if ($database_amount === $amount && $database_name === $name && $database_email === $email) {
+            header('Location: ' . $database_url);
+            exit;
+        } else {
+            Capsule::table('mod_billplz_gateway')
+                ->where('userid', $userid)
+                ->where('invoiceid', $reference_1)
+                ->delete();
+        }
+
+        break;
+    }
 
     $billplz = new Billplz($api_key);
 
@@ -77,6 +107,20 @@ if ($ca->isLoggedIn() || $_SESSION['adminid']) {
 
     if (empty($url)) {
         exit('Something went wrong! ' . $billplz->getErrorMessage());
+    } else {
+        /*
+        * Added to achieve 1 invoice, 1 bill as possible
+        */
+        Capsule::table('mod_billplz_gateway')->insert(
+                [
+                    'userid' => $userid,
+                    'invoiceid' => $reference_1,
+                    'billurl' => $url,
+                    'amount' => $amount,
+                    'name' => $name,
+                    'email' => $email
+                ]
+        );
     }
 
     header('Location: ' . $url);
