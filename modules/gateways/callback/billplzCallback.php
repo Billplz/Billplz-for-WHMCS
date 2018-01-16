@@ -44,6 +44,13 @@ $paymentAmount = number_format(($moreData['amount'] / 100), 2);
 $paymentFee = 0;
 $hash = Billplz::getSignature();
 
+/*
+* Get Base Currency Amount
+*/
+if (!empty($moreData['reference_2'])) {
+    $paymentAmount = $moreData['reference_2'];
+}
+
 $transactionState = $data['state'];
 
 if ($success) {

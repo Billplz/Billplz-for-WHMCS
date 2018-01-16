@@ -48,19 +48,21 @@ if ($ca->isLoggedIn() || $_SESSION['adminid']) {
     $description = isset($_POST['description']) ? $_POST['description'] : die('Description parameter is not passed');
     $reference_1 = isset($_POST['invoiceid']) ? $_POST['invoiceid'] : die('Invoice parameter is not passed');
     $userid = isset($_POST['userid']) ? $_POST['userid'] : die('Userid parameter is not passed');
+    $baseCurrencyAmount = isset($_POST['basecurrencyamount']) ? $_POST['basecurrencyamount'] : die('BaseCurrencyAmount parameter is not passed');
+    $baseCurrency = isset($_POST['basecurrency']) ? $_POST['basecurrency'] : die('BaseCurrency parameter is not passed');
 
     $hash = isset($_POST['hash']) ? $_POST['hash'] : die('Hash parameter is not passed');
-    $raw_string = $amount . $reference_1 . $userid;
+    $raw_string = $amount . $reference_1 . $userid . $baseCurrencyAmount;
     $filtered_string = preg_replace("/[^a-zA-Z0-9]+/", "", $raw_string);
     $new_hash = hash_hmac('sha256', $filtered_string, $x_signature);
 
     if ($hash !== $new_hash) {
-        exit('Calcualted Hash does not valid. Contact developer for more information.');
+        exit('Calculated Hash does not valid. Contact developer for more information.');
     }
 
     $redirect_url = $CONFIG['SystemURL'] . '/modules/gateways/billplzPay/billplzReturn.php';
     $callback_url = $CONFIG['SystemURL'] . '/modules/gateways/callback/billplzCallback.php';
-
+    $billplz = new Billplz($api_key);
 
     /*
     * Added to achieve 1 invoice, 1 bill as possible
@@ -74,6 +76,7 @@ if ($ca->isLoggedIn() || $_SESSION['adminid']) {
         $database_amount = $data->amount;
         $database_name = $data->name;
         $database_email = $data->email;
+        $database_billid = $data->billid;
         unset($data);
 
         if ($database_amount === $amount && $database_name === $name && $database_email === $email) {
@@ -84,12 +87,11 @@ if ($ca->isLoggedIn() || $_SESSION['adminid']) {
                 ->where('userid', $userid)
                 ->where('invoiceid', $reference_1)
                 ->delete();
+            $billplz->deleteBill($database_billid);
         }
 
         break;
     }
-
-    $billplz = new Billplz($api_key);
 
     $billplz
         ->setAmount($amount)
@@ -102,6 +104,8 @@ if ($ca->isLoggedIn() || $_SESSION['adminid']) {
         ->setPassbackURL($callback_url, $redirect_url)
         ->setReference_1($reference_1)
         ->setReference_1_Label('ID')
+        ->setReference_2_Label($baseCurrency)
+        ->setReference_2($baseCurrencyAmount)
         ->create_bill(true);
     $url = $billplz->getURL();
 
@@ -116,6 +120,7 @@ if ($ca->isLoggedIn() || $_SESSION['adminid']) {
                     'userid' => $userid,
                     'invoiceid' => $reference_1,
                     'billurl' => $url,
+                    'billid' => $billplz->getID(),
                     'amount' => $amount,
                     'name' => $name,
                     'email' => $email

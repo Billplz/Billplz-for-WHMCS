@@ -87,6 +87,7 @@ function billplzPay_create_table()
             $table->integer('invoiceid')->primary();
             $table->integer('userid');
             $table->string('billurl');
+            $table->string('billid');
             $table->string('amount');
             $table->string('name');
             $table->string('email');
@@ -132,7 +133,10 @@ function billplzPay_link($params)
     $moduleName = $params['paymentmethod'];
     $whmcsVersion = $params['whmcsVersion'];
 
-    $raw_string = $amount .$invoiceId. $userid;
+    $baseCurrencyAmount= isset($params['basecurrencyamount']) ? $params['basecurrencyamount'] : '' ;
+    $baseCurrency= isset($params['basecurrency']) ? $params['basecurrency'] : '' ;
+
+    $raw_string = $amount .$invoiceId. $userid . $baseCurrencyAmount;
     $filtered_string = preg_replace("/[^a-zA-Z0-9]+/", "", $raw_string);
     $hash = hash_hmac('sha256', $filtered_string, $x_signature);
 
@@ -149,6 +153,8 @@ function billplzPay_link($params)
 
     $sendData = '<form name="paymentfrm" method="post" action="' . $action_url . '">
     <input type="hidden" name="email" value = "' . $email . '">
+    <input type="hidden" name="basecurrencyamount" value = "' . $baseCurrencyAmount . '">
+    <input type="hidden" name="basecurrency" value = "' . $baseCurrency . '">
     <input type="hidden" name="userid" value = "' . $userid . '">
     <input type="hidden" name="mobile" value = "' . $phone . '">
     <input type="hidden" name="name" value = "' . $name . '">
