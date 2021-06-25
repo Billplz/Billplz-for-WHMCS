@@ -1,0 +1,17 @@
+{
+  "schema": "1.0",
+  "type": "whmcs-gateways",
+  "name": "billplz",
+  "license": "GNU General Public License v3.0",
+  "category": "payments",
+  "description": {
+    "name": "Billplz",
+    "tagline": "Accept payments with Billplz."
+  },
+  "authors": [
+    {
+      "name": "BILLPLZ SDN BHD",
+      "homepage": "https:\/\/www.billplz.com\/"
+    }
+  ]
+}

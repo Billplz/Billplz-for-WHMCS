@@ -1,31 +1,29 @@
 # Billplz for WHMCS
 
-Accept payment using Billplz by using this plugin.
+Accept payment using Billplz.
 
-# System Requirement
+## Installation
 
-* PHP 5.6, **7.0 (Recommended)**
-* WHMCS v6.x, v7.x
+* Download: https://github.com/Billplz/billplz-for-whmcs/archive/master.zip
+* Extract the dowloaded zip files
+* Upload folder **modules** to your WHMCS installation directory
 
-# Installation
+## Compatibility
 
-* Download here: [**WHMCS Marketplace**](https://marketplace.whmcs.com/product/1150)
-* **Extract** the dowloaded zip files
-* Upload folder **modules** to **Installation Directory**
-* Let's Configure!
+Tested up WHMCS 8.2.x
 
-# Configuration
+## Configuration
 
-1. Go to WHMCS Administration
-2. Setup >> Payments >> Payment Gateways
-3. Set **API Key** & **X Signature Key**
-4. Set **Convert to Processing** to **MYR**
-4. Save
+1. Login to WHMCS Administration
+1. Navigate to System Settings >> Payment Gateways
+1. Set up API Secret Key, Collection ID and X Signature Key
+1. Set **Convert to Processing** to **MYR**
+1. Save changes
 
-# Troubleshooting
+### Custom Bill Description
 
-* Please make sure you have enabled X Signature Key properly on your [Billplz Account Settings](https://www.billplz.com/enterprise/setting)
+You may customize the Bill Description by modifying `$parameter['description']` in **modules/gateways/billplz/bills.php**
 
 # Other
 
-Please open an issue or email to wan@billplz.com
+Facebook: [Billplz Dev Jam](https://www.facebook.com/groups/billplzdevjam/)
