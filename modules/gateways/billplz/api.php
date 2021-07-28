@@ -119,7 +119,7 @@ class Api
         }
 
         /* Create Bills */
-        $bill = $this->connect->createBill($parameter, $optional);
+        return $this->connect->createBill($parameter, $optional);
     }
 
     public function deleteBill($parameter)
