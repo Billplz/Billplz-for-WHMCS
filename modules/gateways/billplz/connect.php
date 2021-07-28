@@ -322,6 +322,7 @@ class Connect
 
         curl_setopt($this->process, CURLOPT_URL, $url);
         curl_setopt($this->process, CURLOPT_POSTFIELDS, http_build_query($data));
+        curl_setopt($this->process, CURLOPT_CUSTOMREQUEST, NULL);
         $body = curl_exec($this->process);
         $header = curl_getinfo($this->process, CURLINFO_HTTP_CODE);
         $return = array($header, $body);
