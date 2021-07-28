@@ -102,19 +102,6 @@ class Api
             throw new \Exception("Email or Mobile must be set!");
         }
 
-        /* Manipulate Deliver features to allow Email/SMS Only copy */
-        if ($sendCopy === '0') {
-            $optional['deliver'] = 'false';
-        } elseif ($sendCopy === '1' && !empty($parameter['email'])) {
-            $optional['deliver'] = 'true';
-            unset($parameter['mobile']);
-        } elseif ($sendCopy === '2' && !empty($parameter['mobile'])) {
-            $optional['deliver'] = 'true';
-            unset($parameter['email']);
-        } elseif ($sendCopy === '3') {
-            $optional['deliver'] = 'true';
-        }
-
         /* Validate Mobile Number first */
         if (!empty($parameter['mobile'])) {
             /* Strip all unwanted character */
@@ -126,49 +113,13 @@ class Api
             /* If the number doesn't have valid formatting, reject it */
             /* The ONLY valid format '<1 Number>' + <10 Numbers> or '<1 Number>' + <11 Numbers> */
             /* Example: '60141234567' or '601412345678' */
-            if (!preg_match('/^[0-9]{11,12}$/', $parameter['mobile'], $m)) {
+            if (!preg_match('/^(601).{8,9}$/', $parameter['mobile'], $m)) {
                 $parameter['mobile'] = '';
             }
         }
 
         /* Create Bills */
         $bill = $this->connect->createBill($parameter, $optional);
-        if ($bill[0] === 200) {
-            return $bill;
-        }
-
-        /* Check if Failed caused by wrong Collection ID */
-        $collection = $this->toArray($this->getCollection($parameter['collection_id']));
-
-        /* If doesn't exists or belong to another merchant */
-        /* + In-case the collection id is an empty string */
-        if ($collection[0] === 404 || $collection[0] === 401 || empty($parameter['collection_id'])) {
-            /* Get All Active & Inactive Collection List */
-            $collectionIndexActive = $this->toArray($this->getCollectionIndex(array('page' => '1', 'status' => 'active')));
-            $collectionIndexInactive = $this->toArray($this->getCollectionIndex(array('page' => '1', 'status' => 'inactive')));
-
-            /* If Active Collection not available but Inactive Collection is available */
-            if (empty($collectionIndexActive[1]['collections']) && !empty($collectionIndexInactive[1]['collections'])) {
-                /* Use inactive collection */
-                $parameter['collection_id'] = $collectionIndexInactive[1]['collections'][0]['id'];
-            }
-
-            /* If there is Active Collection */
-            elseif (!empty($collectionIndexActive[1]['collections'])) {
-                $parameter['collection_id'] = $collectionIndexActive[1]['collections'][0]['id'];
-            }
-
-            /* If there is no Active and Inactive Collection */
-            else {
-                $collection = $this->toArray($this->createCollection('Payment for Purchase'));
-                $parameter['collection_id'] = $collection[1]['id'];
-            }
-        } else {
-            return $bill;
-        }
-
-        /* Create Bills */
-        return $this->connect->createBill($parameter, $optional);
     }
 
     public function deleteBill($parameter)
