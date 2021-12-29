@@ -79,39 +79,62 @@ function billplz_create_table()
     // If the table is not exist, create one
     if (!Capsule::schema()->hasTable('mod_billplz_gateway')) {
         Capsule::schema()->create(
-                'mod_billplz_gateway',
-        function ($table) {
-            $table->engine = 'InnoDB';
+            'mod_billplz_gateway',
+            function ($table) {
+                $table->engine = 'InnoDB';
 
-            $table->bigIncrements('id')->primary();
-            $table->integer('invoiceid');
-            $table->string('bill_slug');
-            $table->string('amount');
-            $table->string('name');
-            $table->string('email');
-            $table->string('mobile');
-            $table->string('state');
+                $table->bigIncrements('id')->primary();
+                $table->integer('invoiceid');
+                $table->string('bill_slug');
+                $table->string('amount');
+                $table->string('name');
+                $table->string('email');
+                $table->string('mobile');
+                $table->string('state');
 
-            $table->index('invoiceid');
-            $table->index('bill_slug');
-        }
-    );
+                $table->index('invoiceid');
+                $table->index('bill_slug');
+            }
+        );
+    }
+
+    if (!Capsule::schema()->hasTable('mod_billplz_gateway_invoice_currency')) {
+        Capsule::schema()->create(
+            'mod_billplz_gateway_invoice_currency',
+            function ($table) {
+                $table->engine = 'InnoDB';
+
+                $table->bigIncrements('id')->primary();
+                $table->integer('invoiceid');
+                $table->string('currency');
+
+                $table->index('invoiceid');
+                $table->index('bill_slug');
+            }
+        );
     }
 }
 
 function billplz_link($params)
 {
+    if ($params['currency'] != 'MYR') {
+        return billplz_unsupported_currency_message();
+    }
+
+    if (array_key_exists('basecurrency', $params) && $params['basecurrency'] != 'MYR') {
+        return billplz_unsupported_currency_message();
+    }
+
+    billplz_store_invoice_currency($params);
 
     $system_url = rtrim($params['systemurl'], '/');
     $logo = $params['bill_logo'];
 
-    //'/modules/gateways/billplz/bills.php';
-
     $code = '<p>'
         . nl2br($params['instructions'])
         . '<br />'
-        . '<a href="'.$system_url.'/modules/gateways/billplz/bills.php?invoiceid='.$params['invoiceid'].'">'
-        . '<img src="'.$system_url.'/modules/gateways/billplz/'.$logo.'" title="'.Lang::trans('Pay with Billplz').'">'
+        . '<a href="' . $system_url . '/modules/gateways/billplz/bills.php?invoiceid=' . $params['invoiceid'] . '">'
+        . '<img src="' . $system_url . '/modules/gateways/billplz/' . $logo . '" title="' . Lang::trans('Pay with Billplz') . '">'
         . '</a>'
         . '<br />'
         . Lang::trans('invoicerefnum')
@@ -120,4 +143,26 @@ function billplz_link($params)
         . '</p>';
 
     return $code;
+}
+
+function billplz_unsupported_currency_message()
+{
+    return '<p>Unsupported currency!</p>';
+}
+
+function billplz_store_invoice_currency($params)
+{
+    $data = Capsule::table('mod_billplz_gateway_invoice_currency')
+        ->where('invoiceid', $params['invoiceid'])
+        ->take(1)
+        ->first();
+
+    if (!$data) {
+        Capsule::table('mod_billplz_gateway_invoice_currency')->insert(
+            [
+                'invoiceid' => $params['invoiceid'],
+                'currency' => $params['currency']
+            ]
+        );
+    }
 }

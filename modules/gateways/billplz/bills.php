@@ -34,9 +34,18 @@ if ($authUser) {
 
     if ($selectedClient) {
         $invoice = $selectedClient->invoices()->find($_GET['invoiceid']);
-        
-        if (!$invoice){
+
+        if (!$invoice) {
             exit('Invalid Invoice');
+        }
+
+        $invoice_currency = Capsule::table('mod_billplz_gateway_invoice_currency')
+            ->where('invoiceid', $_GET['invoiceid'])
+            ->take(1)
+            ->first();
+
+        if (!$invoice_currency || $invoice_currency->currency != "MYR") {
+            exit('Unsupported Currency!');
         }
 
         $inv_attr = $invoice->getAttributes();
@@ -67,15 +76,15 @@ if ($authUser) {
         $billplz = new Api($connect);
 
         $data = Capsule::table('mod_billplz_gateway')
-                        ->where('invoiceid', $_GET['invoiceid'])
-                        ->take(1)
-                        ->first();
-        
+            ->where('invoiceid', $_GET['invoiceid'])
+            ->take(1)
+            ->first();
+
         $flagNeedCreateBill = true;
         $flagDeleteOldBill = false;
-        if ($data){
+        if ($data) {
             $flagNeedCreateBill = false;
-            foreach (['amount','name','email','mobile'] as $value){
+            foreach (['amount', 'name', 'email', 'mobile'] as $value) {
                 if ($data->$value !=  $parameter[$value]) {
                     $flagNeedCreateBill = true;
                     $flagDeleteOldBill = true;
@@ -84,17 +93,17 @@ if ($authUser) {
             }
         }
 
-        if ($flagNeedCreateBill){
+        if ($flagNeedCreateBill) {
             if ($flagDeleteOldBill) {
                 $billplz->deleteBill($data->bill_slug);
                 Capsule::table('mod_billplz_gateway')
-                        ->where('invoiceid', $_GET['invoiceid'])
-                        ->delete();
+                    ->where('invoiceid', $_GET['invoiceid'])
+                    ->delete();
             }
 
             list($rheader, $rbody) = $billplz->toArray($billplz->createBill($parameter, $optional));
 
-            if ($rheader !== 200){
+            if ($rheader !== 200) {
                 error_log(print_r($rbody, true));
                 throw new Exception(print_r($rbody, true));
             }
@@ -115,7 +124,6 @@ if ($authUser) {
         }
 
         header('Location: ' . $rbody['url']);
-
     } else {
         header('Location: ' . $CONFIG['SystemURL']);
     }
