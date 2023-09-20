@@ -24,7 +24,7 @@ Accept payment using Billplz.
 
 ## Compatibility
 
-Tested up WHMCS 8.2.x
+Tested up WHMCS 8.7.x
 
 ## Configuration
 
